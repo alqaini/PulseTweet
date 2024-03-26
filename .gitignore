@@ -1,5 +1,3 @@
 env/
 PulseTweet/model
-PulseTweet/model/config.json
-PulseTweet/model/model.tar.gz
-PulseTweet/model/pytorch_model.bin
+
