@@ -1,6 +1,6 @@
 import os
 import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, AdamW
+from transformers import DistilBertTokenizer, DistilBertForSequenceClassification, AdamW
 from torch.utils.data import DataLoader
 from datasets import load_dataset
 import pandas as pd
@@ -34,29 +34,29 @@ def train():
     dataset = load_dataset("zeroshot/twitter-financial-news-topic")
     df_train = pd.DataFrame(dataset["train"])
     df_test = pd.DataFrame(dataset["validation"])
-    
+
     # Apply text cleaning
     df_train['text'] = df_train['text'].apply(clean_text)
     df_test['text'] = df_test['text'].apply(clean_text)
 
     # Tokenization and model preparation
-    tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
-    model = AutoModelForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=20)
+    tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
+    model = DistilBertForSequenceClassification.from_pretrained('distilbert-base-uncased', num_labels=20)
 
     # Encoding and dataset preparation
-    train_encodings = tokenizer(df_train['text'].tolist(), truncation=True, padding=True, max_length=128)
-    test_encodings = tokenizer(df_test['text'].tolist(), truncation=True, padding=True, max_length=128)
+    train_encodings = tokenizer(df_train['text'].tolist(), truncation=True, padding=True, max_length=64)  # Reduced max_length
+    test_encodings = tokenizer(df_test['text'].tolist(), truncation=True, padding=True, max_length=64)  # Reduced max_length
     train_dataset = FinancialNewsDataset(train_encodings, df_train['label'].tolist())
     test_dataset = FinancialNewsDataset(test_encodings, df_test['label'].tolist())
 
     # DataLoader and optimizer setup
-    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+    train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)  # Increased batch size
     optim = AdamW(model.parameters(), lr=5e-5)
 
     # Training loop
-    epochs = 1
+    epochs = 1  # Keep it to one for testing, can be increased as needed
     model.train()
-    for epoch in range(epochs): 
+    for epoch in range(epochs):
         for batch in train_loader:
             optim.zero_grad()
             input_ids = batch['input_ids']
@@ -66,7 +66,7 @@ def train():
             loss = outputs.loss
             loss.backward()
             optim.step()
-    
+
     # Save the trained model
     model.save_pretrained("/opt/ml/model")
 
